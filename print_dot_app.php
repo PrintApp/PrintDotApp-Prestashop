@@ -85,6 +85,7 @@ class Print_Dot_App extends Module
 		if (empty($_pDes)) Configuration::updateValue(PRINT_DOT_APP_DESIGNS, serialize(array()));
 
         return $this->registerHook('displayProductButtons') &&
+        $this->registerHook('displayProductActions') &&
         $this->registerHook('displayHeader') &&
 		$this->registerHook('displayFooter') &&
         $this->registerHook('displayAdminOrder') &&
@@ -188,6 +189,7 @@ class Print_Dot_App extends Module
 			$this->smarty->assign('print_dot_app_customization', $value);
 			return $this->fetch(__DIR__ .'/views/templates/front/displayCustomization.tpl');
 		}
+		
 		return $params['customization']['value'];
 	}
 
@@ -295,6 +297,10 @@ class Print_Dot_App extends Module
 		}
 	}
 
+	public function hookDisplayProductActions($params) {
+		return '<div id="pa-buttons" style="margin-left:10px"></div>';
+	}
+	
     public function hookDisplayProductButtons($params) {
         $productId = (int)Tools::getValue('id_product');
 		$pda_design_options = unserialize(Configuration::get(PRINT_DOT_APP_DESIGNS));
@@ -424,7 +430,8 @@ class Print_Dot_App extends Module
 			);
         }
 
-        return '<script type="text/javascript"> window.print_dot_app_data = ' . json_encode($pdaData). ';</script>';
+        return '<script type="text/javascript"> window.print_dot_app_data = ' . json_encode($pdaData). ';</script>
+       ';
     }
 
     public function hookDisplayHeader($params) {
@@ -559,7 +566,6 @@ class Print_Dot_App extends Module
             if (!empty($print_dot_app_designs[$id_product])) $print_dot_app_val = $print_dot_app_designs[$id_product];
 
             $indexval = Db::getInstance()->getValue("SELECT `id_customization_field` FROM `"._DB_PREFIX_."customization_field` WHERE `id_product` = ".(int)Tools::getValue('id_product')." AND `type` = 1  AND `is_module` = 1");
-
 			if (isset($print_dot_app_val)) {
 				$print_dot_app_data_params = explode('__',$print_dot_app_designs[$id_product]);
 				$print_dot_app_display_mode = isset($print_dot_app_data_params[2]) ? $print_dot_app_data_params[2] : $print_dot_app_display_mode;
@@ -583,9 +589,8 @@ class Print_Dot_App extends Module
 					</div>
 					<div id="w2p-div">
 						<div style="margin-bottom:10px; max-width: 320px">
-							<select value="'.$print_dot_app_design.'" id="ppa_pick" name="print_dot_app_design_select" style="width:300px;" class="c-select form-control" >
+							<select value="'.$print_dot_app_design.'" id="ppa_pick" name="print_dot_app_design_select" style="width:300px;margin-bottom: 15px;" class="c-select form-control" >
 								<option style="color:#aaa" value="0">None</option>
-								<option '.($print_dot_app_design == 'design_a9ffabf7-cd2c-4214-b758-7f7e6925e8b7' ? 'selected ' : '').'style="color:#aaa" value="design_a9ffabf7-cd2c-4214-b758-7f7e6925e8b7">Design A</option>
 							</select>
 				  
 						    <select value="'.$print_dot_app_display_mode.'" id="ppa_pick_display_mode" name="print_dot_app_display_mode" style="width:300px;margin-top: 10px" class="c-select form-control" >
@@ -676,12 +681,6 @@ class Print_Dot_App extends Module
           $print_dot_app_secret = strval(Tools::getValue(PRINT_DOT_APP_SECRET_KEY));
           $print_dot_app_cat_cust_enabled = strval(Tools::getValue(PRINT_DOT_APP_CATEGORY_CUSTOMIZATION.'_enabled'));
 
-// var_dump($pitchprint_api);
-// var_dump($pitchprint_secret);
-// var_dump($pp_cat_cust_enabled);
-
-// die();
-
           if (!$print_dot_app_api  || empty($print_dot_app_api) || !Validate::isGenericName($print_dot_app_api) || !$print_dot_app_secret  || empty($print_dot_app_secret) || !Validate::isGenericName($print_dot_app_secret)) {
               $output .= $this->displayError( $this->l('Invalid Configuration value') );
           } else {
@@ -720,22 +719,8 @@ class Print_Dot_App extends Module
                     'name' => PRINT_DOT_APP_SECRET_KEY,
                     'size' => 40,
                     'required' => true
-                )//,
-              //  array(
-              //  	'type'=>'checkbox',
-	            	// 'name'=> PRINT_DOT_APP_CATEGORY_CUSTOMIZATION,
-	            	// 'values' => array(
-	            	// 	'query'=> [
-	            	// 		[
-	            	// 			'id_option' => 'enabled',
-	            	// 			'name' => 'Enable customize buttons on category'
-	            				
-	            	// 		]
-            		// 	],
-	            	// 	'id'=> 'id_option',
-	            	// 	'name'=> 'name'
-	            	// )
-				// )
+                )
+                // ToDo: Category Customization
             ),
             'submit' => array(
                 'title' => $this->l('Save'),
