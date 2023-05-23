@@ -424,7 +424,7 @@ class Print_Dot_App extends Module
 			);
         }
 
-        return '<script <script type="text/javascript"> window.print_dot_app_data = ' . json_encode($pdaData). ';</script>';
+        return '<script type="text/javascript"> window.print_dot_app_data = ' . json_encode($pdaData). ';</script>';
     }
 
     public function hookDisplayHeader($params) {
