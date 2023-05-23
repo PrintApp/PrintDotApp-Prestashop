@@ -114,6 +114,7 @@
                 justify-content: space-between;
                 padding: 5px;
                 width: 300px;
+                margin-bottom: 15px;
             }
             @media only screen and (max-width: 1280px) {
                 div.print_dot_app_select {
@@ -141,16 +142,14 @@
     
         if (input && input.data && input.data.items) {
             input.data.items.forEach(item=>{
-                if(item.type == 'folder') {
-                    html+= `<div>
-                                <div class="item">
-                                    <input type="radio" value="${item.id}__${item.title}" name="print_dot_app_design_select"/>
-                                    ${item.items && item.items.length ? '<span class="chevron right" data-id="'+item.id+'"></span>' : ''}
-                                    <span>${item.title}</span>
-                                </div>
-                            </div>`;
-                }
-            })
+                html+= `<div>
+                            <div class="item">
+                                <input type="radio" value="${item.id}__${item.title}" name="print_dot_app_design_select"/>
+                                ${item.type == 'folder' ? '<span class="chevron right" data-id="'+item.id+'"></span>' : ''}
+                                <span>${item.title}</span>
+                            </div>
+                        </div>`;
+            });
         }
         html+='</div>';
         

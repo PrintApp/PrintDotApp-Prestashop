@@ -17,7 +17,7 @@
                     )
                 );
                 
-                const projectId = data.designId;
+                const projectId = data.projectId;
                 
                 const links = `<br/>
                     <a target="_blank" href="https://pdf.print.app/${projectId}">Download PDF</a><br/>

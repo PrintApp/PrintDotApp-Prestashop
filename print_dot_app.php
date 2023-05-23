@@ -361,9 +361,7 @@ class Print_Dot_App extends Module
 
         $pda_apiKey = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
         $pda_designValuesArray = explode('__', $pda_productValues);
-// var_dump($pp_values);echo '<br/><br/>';
-        // if (!is_string($pp_values)) $pp_values = json_decode(urldecode($pp_values));//json_decode(urldecode($pp_values), true);
-// var_dump(urldecode($pp_values));die();
+
 		 //update product customizable
         Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'product` SET `customizable` = 1 WHERE `id_product` = '.(int)$productId);
 
@@ -375,6 +373,7 @@ class Print_Dot_App extends Module
         Configuration::updateGlobalValue('PS_CUSTOMIZATION_FEATURE_ACTIVE', '1');
 
 		$pdaData = array(
+			'commandSelector'		=> '#pa-buttons',
 			'client'				=> 'ps',
 			'projectId' 			=> $pda_project_id,
 			'userId'				=> $this->context->cookie->id_customer,
@@ -460,12 +459,6 @@ class Print_Dot_App extends Module
 					'modules/'.$this->name.'/views/js/cartType.js',
 					[ 'position' => 'bottom', 'priority' => 201 ]
 				);	
-				
-				// $this->context->controller->registerJavascript(
-				// 	'pp-noes6-js',
-				// 	PP_NOES6_JS,
-				// 	['server' => 'remote', 'position' => 'bottom', 'priority' => 202]
-				// );
 						
 				$this->context->controller->registerJavascript(
 					'module-pitchprint-product-buttons',
@@ -549,13 +542,11 @@ class Print_Dot_App extends Module
 		echo '<script>window.pda_ajax_url="'.$url.'";</script>';
 		
 		if ($_controller->controller_name === 'AdminProducts') {
-			// Context::getContext()->controller->addJquery();
 			$this->context->controller->addJS($this->_path.'/views/js/designTreeSelect.js');
 		}
     }
 
     public function hookDisplayAdminProductsExtra($params) {
-    	echo '<script>console.log("hell")</script>';
 		$id_product = (int)$params['id_product'];
         if (Validate::isLoadedObject($product = new Product($id_product))) {
             $print_dot_app_design = '0';
@@ -563,13 +554,12 @@ class Print_Dot_App extends Module
             $print_dot_app_display_mode = 'modal';
             $print_dot_app_design_required = 0;
             
-// echo '<script>console.log('.json_encode($print_dot_app_design).')</script>';//die();
+
             $print_dot_app_designs = unserialize(Configuration::get(PRINT_DOT_APP_DESIGNS));
             if (!empty($print_dot_app_designs[$id_product])) $print_dot_app_val = $print_dot_app_designs[$id_product];
 
             $indexval = Db::getInstance()->getValue("SELECT `id_customization_field` FROM `"._DB_PREFIX_."customization_field` WHERE `id_product` = ".(int)Tools::getValue('id_product')." AND `type` = 1  AND `is_module` = 1");
-//			$indexval = Db::getInstance()->getValue("SELECT `id_customization_field` FROM `"._DB_PREFIX_."customization_field` WHERE `id_product` = " . $id_product . " AND `type` = 1 ");
-			// var_dump($print_dot_app_val);die();
+
 			if (isset($print_dot_app_val)) {
 				$print_dot_app_data_params = explode('__',$print_dot_app_designs[$id_product]);
 				$print_dot_app_display_mode = isset($print_dot_app_data_params[2]) ? $print_dot_app_data_params[2] : $print_dot_app_display_mode;
@@ -586,15 +576,13 @@ class Print_Dot_App extends Module
 			}
 			
             $str = '
-            	<script>console.log("hi cino")</script>
-            	<script>console.log('.json_encode($print_dot_app_data_params).')</script>
 				<div class="product-tab-content"><div style="padding: 20px" class="panel product-tab">
  					<h3>Assign Print.App Design</h3>
  					<div class="alert alert-info">
 						You can create your designs at <a target="_blank" href="https://admin.print.app/designs">https://admin.print.app/designs</a>
 					</div>
 					<div id="w2p-div">
-						<div style="margin-bottom:10px">
+						<div style="margin-bottom:10px; max-width: 320px">
 							<select value="'.$print_dot_app_design.'" id="ppa_pick" name="print_dot_app_design_select" style="width:300px;" class="c-select form-control" >
 								<option style="color:#aaa" value="0">None</option>
 								<option '.($print_dot_app_design == 'design_a9ffabf7-cd2c-4214-b758-7f7e6925e8b7' ? 'selected ' : '').'style="color:#aaa" value="design_a9ffabf7-cd2c-4214-b758-7f7e6925e8b7">Design A</option>
@@ -615,25 +603,6 @@ class Print_Dot_App extends Module
 				<script>window.print_dot_app_current_design = "'.$print_dot_app_design.'__'.$print_dot_app_design_title.'";</script>
 			';
 			return $str;
-			$print_dot_app_timestamp = time();
-			$print_dot_app_apiKey = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
-			$print_dot_app_secretKey = Configuration::get(PRINT_DOT_APP_SECRET_KEY);
-			$print_dot_app_signature = (!empty($print_dot_app_secretKey) && !empty($print_dot_app_apiKey)) ? md5($print_dot_app_apiKey . $print_dot_app_secretKey . $print_dot_app_timestamp) : '';
-			$print_dot_app_options = isset($p_designs[$id_product]) ? $p_designs[$id_product] : '0';
-
-			return $str . "
-				<script type=\"text/javascript\">
-					jQuery(function($) {
-						" . PPADMIN_DEF . "
-						PPADMIN.vars = {
-							credentials: { timestamp: '" . $print_dot_app_timestamp . "', apiKey: '" . $print_dot_app_apiKey . "', signature: '" . $print_dot_app_signature . "' },
-							productValues: \"{$print_dot_app_options}\",
-							apiKey: '{$print_dot_app_apiKey}'
-						};
-						PPADMIN.readyFncs.push('init', 'fetchDesigns');
-						if (typeof PPADMIN.start !== 'undefined') PPADMIN.start();
-					});
-				</script>";
         } else {
 			$this->context->controller->errors[] = Tools::displayError('You must first save the product before assigning a design!');
 		}
