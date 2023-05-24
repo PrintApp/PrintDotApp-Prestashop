@@ -124,6 +124,10 @@
             .print_dot_app_indent_list {
                 margin-left: 20px
             }
+            print_dot_app_design_list > div {
+                max-height: 400px;
+                overflow-y: scroll;
+            }
         </style>`;
         document.head.insertAdjacentHTML('beforeEnd', style);
     
