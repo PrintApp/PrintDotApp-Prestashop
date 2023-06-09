@@ -8,7 +8,7 @@ if (!defined('_PS_VERSION_'))
     define('PRINT_DOT_APP_SECRET_KEY', 'print_dot_app_SECRET_KEY');
     define('PRINT_DOT_APP_CATEGORY_CUSTOMIZATION', 'print_dot_app_CATEGORY_CUSTOMIZATION');
 	define('PRINT_DOT_APP_DESIGNS', 'print_dot_app_designs');
-	define('PRINT_DOT_APP_CLIENT_JS', 'https://editor.print.app/js/client.js');
+	define('PRINT_DOT_APP_CLIENT_RUN_JS', 'https://run.print.app/');
 	define('PRINT_DOT_APP_RUNTIME_API_URL', 'https://yhlk1004od.execute-api.eu-west-1.amazonaws.com/prod/runtime');
 
     
@@ -438,16 +438,16 @@ class Print_Dot_App extends Module
 		if ($this->context->controller->php_self  === 'category'
 		  && Configuration::get(PRINT_DOT_APP_CATEGORY_CUSTOMIZATION)) {
 		  	
-			$this->context->controller->registerJavascript(
-				'pda-client-js',
-				PRINT_DOT_APP_CLIENT_JS,
-				['server' => 'remote', 'position' => 'head', 'priority' => 200]
-			);
-			$this->context->controller->registerJavascript(
-				'category-pitchprint-product-buttons',
-				PP_CAT_CLIENT_JS,
-				['server' => 'remote', 'position' => 'bottom', 'priority' => 203 ]
-			);	
+			// $this->context->controller->registerJavascript(
+			// 	'pda-client-js',
+			// 	PRINT_DOT_APP_CLIENT_RUN_JS,
+			// 	['server' => 'remote', 'position' => 'head', 'priority' => 200]
+			// );
+			// $this->context->controller->registerJavascript(
+			// 	'category-pitchprint-product-buttons',
+			// 	PP_CAT_CLIENT_JS,
+			// 	['server' => 'remote', 'position' => 'bottom', 'priority' => 203 ]
+			// );	
 		}
 			
 		if ($this->context->controller->php_self === 'product') {
@@ -457,7 +457,7 @@ class Print_Dot_App extends Module
 			if (isset($pp_design_options[$productId])) {
 				$this->context->controller->registerJavascript(
 					'pda-client-js',
-					PRINT_DOT_APP_CLIENT_JS,
+					PRINT_DOT_APP_CLIENT_RUN_JS . '/' . Configuration::get(PRINT_DOT_APP_DOMAIN_KEY) . '/'. $productId . '/ps',
 					['server' => 'remote', 'position' => 'head', 'priority' => 200]
 				);
 				
@@ -467,11 +467,11 @@ class Print_Dot_App extends Module
 					[ 'position' => 'bottom', 'priority' => 201 ]
 				);	
 						
-				$this->context->controller->registerJavascript(
-					'module-pitchprint-product-buttons',
-					'modules/'.$this->name.'/views/js/client.js',
-					[ 'position' => 'bottom', 'priority' => 203 ]
-				);		
+				// $this->context->controller->registerJavascript(
+				// 	'module-pitchprint-product-buttons',
+				// 	'modules/'.$this->name.'/views/js/client.js',
+				// 	[ 'position' => 'bottom', 'priority' => 203 ]
+				// );		
 			
 				return '<script>window.ppCartType = "ps"</script>';
 			}
@@ -556,61 +556,18 @@ class Print_Dot_App extends Module
     public function hookDisplayAdminProductsExtra($params) {
 		$id_product = (int)$params['id_product'];
         if (Validate::isLoadedObject($product = new Product($id_product))) {
-            $print_dot_app_design = '0';
-            $print_dot_app_design_title = '';
-            $print_dot_app_display_mode = 'modal';
-            $print_dot_app_design_required = 0;
-            
-
-            $print_dot_app_designs = unserialize(Configuration::get(PRINT_DOT_APP_DESIGNS));
-            if (!empty($print_dot_app_designs[$id_product])) $print_dot_app_val = $print_dot_app_designs[$id_product];
-
-            $indexval = Db::getInstance()->getValue("SELECT `id_customization_field` FROM `"._DB_PREFIX_."customization_field` WHERE `id_product` = ".(int)Tools::getValue('id_product')." AND `type` = 1  AND `is_module` = 1");
-			if (isset($print_dot_app_val)) {
-				$print_dot_app_data_params = explode('__',$print_dot_app_designs[$id_product]);
-				$print_dot_app_display_mode = isset($print_dot_app_data_params[2]) ? $print_dot_app_data_params[2] : $print_dot_app_display_mode;
-				$print_dot_app_design = isset($print_dot_app_data_params[0]) ? $print_dot_app_data_params[0] : $print_dot_app_design;
-				$print_dot_app_design_title = isset($print_dot_app_data_params[1]) ? $print_dot_app_data_params[1] : $print_dot_app_design_title;
-				$print_dot_app_design_required = isset($print_dot_app_data_params[3]) ? $print_dot_app_data_params[3] : $print_dot_app_design_required;
-			}
-			
-			// GENERATE DISPLAY OPTIONS AND SET CURRENT DISPLAY MODE
-			$displayModeOptions = '';
-			$displays = array('modal'=>'Full Window', 'inline'=>'Inline', 'mini'=>'Mini');
-			foreach($displays as $mode => $label) {
-				$displayModeOptions .= '<option value="' .$mode. '"' .($mode == $print_dot_app_display_mode ? "selected=\"selected\"" : " "). '>' .$label. '</option>';
-			}
-			
-            $str = '
-				<div class="product-tab-content"><div style="padding: 20px" class="panel product-tab">
- 					<h3>Assign Print.App Design</h3>
- 					<div class="alert alert-info">
-						You can create your designs at <a target="_blank" href="https://admin.print.app/designs">https://admin.print.app/designs</a>
-					</div>
-					<div id="w2p-div">
-						<div style="margin-bottom:10px; max-width: 320px">
-							<select value="'.$print_dot_app_design.'" id="ppa_pick" name="print_dot_app_design_select" style="width:300px;margin-bottom: 15px;" class="c-select form-control" >
-								<option style="color:#aaa" value="0">None</option>
-							</select>
-				  
-						    <select value="'.$print_dot_app_display_mode.'" id="ppa_pick_display_mode" name="print_dot_app_display_mode" style="width:300px;margin-top: 10px" class="c-select form-control" >
-							'.$displayModeOptions.'
-						    </select>
-						</div>
-						<div class="checkbox" style="margin-bottom:10px">
-							<div class="checkbox">
-								<label for="print_dot_app_design_required"> <input '.($print_dot_app_design_required === '1'?'checked="checked" ':'').'type="checkbox" name="print_dot_app_design_required" id="ppa_pick_hide_cart_btn">Required.</label>
-							</div>
-						</div>
-					</div>
-				</div>
-				<input type="hidden" value="'.$print_dot_app_design.'__'.$print_dot_app_design_title.'" name="print_dot_app_design_select_current"></input>
-				<script>window.print_dot_app_current_design = "'.$print_dot_app_design.'__'.$print_dot_app_design_title.'";</script>
-			';
-			return $str;
-        } else {
+        	$api_key = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
+        	$this->context->smarty->assign([
+        		'pa_admin_values' => json_encode([
+	        		'product_title' => array_pop($product->name),
+	                'api_key' => $api_key,
+	                'product_id' => $id_product
+	                ]),
+                'pa_module_uri' =>   __PS_BASE_URI__ . 'modules/print_dot_app'
+            ]);
+			return $this->display(__FILE__, '/views/templates/admin/displayAdminProductsExtra.tpl');
+        } else
 			$this->context->controller->errors[] = Tools::displayError('You must first save the product before assigning a design!');
-		}
     }
 
     // Reset product upon add to cart
