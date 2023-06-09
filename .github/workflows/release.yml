@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: "CHANGELOG.txt"
+          name: "Print.App - PrestaShop 1.7.x - ${{ github.ref_name }}"
