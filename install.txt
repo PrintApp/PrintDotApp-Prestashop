@@ -1,0 +1,5 @@
+To install Print.App:
+
+1. Copy the print_dot_app folder into your modules/ folder.
+2. Proceed to your Modules catalog on PrestaShop Admin and search for Print.App
+3. Click on install.
