@@ -6,10 +6,8 @@ if (!defined('_PS_VERSION_'))
     define('PRINT_DOT_APP_ID_CUSTOMIZATION_NAME', 'Print.App');
     define('PRINT_DOT_APP_DOMAIN_KEY', 'print_dot_app_DOMAIN_KEY');
     define('PRINT_DOT_APP_SECRET_KEY', 'print_dot_app_SECRET_KEY');
-    define('PRINT_DOT_APP_CATEGORY_CUSTOMIZATION', 'print_dot_app_CATEGORY_CUSTOMIZATION');
-	define('PRINT_DOT_APP_DESIGNS', 'print_dot_app_designs');
-	define('PRINT_DOT_APP_CLIENT_RUN_JS', 'https://run.print.app/');
-	define('PRINT_DOT_APP_RUNTIME_API_URL', 'https://yhlk1004od.execute-api.eu-west-1.amazonaws.com/prod/runtime');
+	define('PRINT_DOT_APP_CLIENT_RUN_JS', 'https://run.print.app');
+	define('PRINT_DOT_APP_CLIENT_JS', 'https://editor.print.app/js/client.js');
 
     
 class Print_Dot_App extends Module
@@ -17,7 +15,7 @@ class Print_Dot_App extends Module
     public function __construct() {
         $this->name = 'print_dot_app';
         $this->tab = 'front_office_features';
-        $this->version = '1.0.0';
+        $this->version = '1.1.0';
         $this->author = 'Print.App';
         $this->need_instance = 1;
         $this->ps_versions_compliancy = array('min' => '1.7.1.0', 'max' => _PS_VERSION_);
@@ -26,45 +24,12 @@ class Print_Dot_App extends Module
         parent::__construct();
 
         $this->displayName = $this->l('Print.App', 'print_dot_app');
-        $this->description = $this->l('This module is developed to assist you with web2print.', 'print_dot_app');
+        $this->description = $this->l('A Web2Print product customization module', 'print_dot_app');
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?', 'print_dot_app');
         
         $this->clearCustomization();
         $this->createCustomization();
-        $this->serveDesigns();
-    }
-    
-    public function serveDesigns() {
-		$cookie = new Cookie('psAdmin', '', (int)Configuration::get('PS_COOKIE_LIFETIME_BO'));
-		
-    	if (!isset($cookie->id_employee) || $cookie->id_employee < 1) return;
-    	
-    	$task = (string)Tools::getValue('task');
-    	if ($task !== 'print_dot_app_serve_designs') return;
-    	
-    	$authKey = Configuration::get(PRINT_DOT_APP_SECRET_KEY);
-		$url = PRINT_DOT_APP_RUNTIME_API_URL.'/designs'.(isset($_POST['path']) ? '/'.$_POST['path'] : '');
-
-		$curl = curl_init();
-		curl_setopt_array($curl, array(
-		  CURLOPT_URL => $url,
-		  CURLOPT_RETURNTRANSFER => true,
-		  CURLOPT_ENCODING => '',
-		  CURLOPT_MAXREDIRS => 10,
-		  CURLOPT_TIMEOUT => 0,
-		  CURLOPT_FOLLOWLOCATION => true,
-		  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-		  CURLOPT_CUSTOMREQUEST => 'GET',
-		  CURLOPT_HTTPHEADER => array(
-		    'Authorization: '.$authKey
-		  ),
-		));
-		
-		$response = curl_exec($curl);
-		
-		curl_close($curl);
-		die($response);
     }
     
     public function install() {
@@ -78,24 +43,22 @@ class Print_Dot_App extends Module
 
 		$_pKey = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
 		$_pSec = Configuration::get(PRINT_DOT_APP_SECRET_KEY);
-		$_pDes = Configuration::get(PRINT_DOT_APP_DESIGNS);
 
 		if (empty($_pKey)) Configuration::updateValue(PRINT_DOT_APP_DOMAIN_KEY, '');
 		if (empty($_pSec)) Configuration::updateValue(PRINT_DOT_APP_SECRET_KEY, '');
-		if (empty($_pDes)) Configuration::updateValue(PRINT_DOT_APP_DESIGNS, serialize(array()));
 
-        return $this->registerHook('displayProductButtons') &&
-        $this->registerHook('displayProductActions') &&
-        $this->registerHook('displayHeader') &&
-		$this->registerHook('displayFooter') &&
-        $this->registerHook('displayAdminOrder') &&
-        $this->registerHook('displayBackOfficeHeader') &&
-        $this->registerHook('actionProductUpdate') &&
-        $this->registerHook('actionOrderStatusPostUpdate') &&
-        $this->registerHook('displayAdminProductsExtra') &&
-		$this->registerHook('displayCustomization') &&
-		$this->registerHook('displayCustomerAccount') &&
-		$this->registerHook('actionCartUpdateQuantityBefore');
+        return 	$this->registerHook('displayProductButtons') &&
+				$this->registerHook('displayProductActions') &&
+				$this->registerHook('displayHeader') &&
+				$this->registerHook('displayFooter') &&
+				$this->registerHook('displayAdminOrder') &&
+				$this->registerHook('displayBackOfficeHeader') &&
+				$this->registerHook('actionProductUpdate') &&
+				$this->registerHook('actionOrderStatusPostUpdate') &&
+				$this->registerHook('displayAdminProductsExtra') &&
+				$this->registerHook('displayCustomization') &&
+				$this->registerHook('displayCustomerAccount') &&
+				$this->registerHook('actionCartUpdateQuantityBefore');
     }
     
     public function uninstall() {
@@ -107,9 +70,9 @@ class Print_Dot_App extends Module
     
     public function createCustomization() {
 		$productId = (int)Tools::getValue('id_product');
-		$pp_values = (string)Tools::getValue('values');
+		$pda_values = (string)Tools::getValue('values');
     	
-		if (!empty($pp_values) AND ($this->context->controller->php_self === 'product' 
+		if (!empty($pda_values) AND ($this->context->controller->php_self === 'product' 
 		  || $this->context->controller->php_self === 'category')) {
 			$indexval = Db::getInstance()->getValue("SELECT `id_customization_field` FROM `"._DB_PREFIX_."customization_field` WHERE `id_product` = {$productId} AND `type` = 1  AND `is_module` = 1");
 
@@ -136,29 +99,31 @@ class Print_Dot_App extends Module
 			}
 			
 			// Add shop id
-			$pp_values = json_decode(urldecode($pp_values));
-			$pp_values->shop_id = (int)Context::getContext()->shop->id;
-			$pp_values = urlencode(json_encode($pp_values));
+			$pda_values = json_decode(urldecode($pda_values));
+			$pda_values->shop_id = (int)Context::getContext()->shop->id;
+			$pda_values = urlencode(json_encode($pda_values));
 			
 			Db::getInstance()->insert('customized_data', array(
 				'id_customization' => $cCid[0]['id_customization'],
 				'type' => 1,
 				'index' => $indexval,
-				'value' => Db::getInstance()->escape($pp_values),
+				'value' => Db::getInstance()->escape($pda_values),
 				'id_module' => $this->id,
 			));
 
 			// Store pp_project in session cookie
 			if (isset(Context::getContext()->cookie->pp_projects)) {
 				$oldCookie = unserialize(Context::getContext()->cookie->pp_projects);
-				$oldCookie[$productId] = $pp_values;
+				$oldCookie[$productId] = $pda_values;
 				Context::getContext()->cookie->pp_projects = serialize($oldCookie);
 			} else {
-				Context::getContext()->cookie->pp_projects = serialize(array($productId => $pp_values));
+				Context::getContext()->cookie->pp_projects = serialize(array($productId => $pda_values));
 			}
 
 			$is_ajax = Tools::getValue('ajax');
-			if ($is_ajax == true) die( json_encode(array('product_customization_id' => $cCid[0]['id_customization'])) );
+            if ($is_ajax == true) {
+                exit(json_encode(['product_customization_id' => $cCid[0]['id_customization']]));
+            }
 		}
 	}
 
@@ -179,7 +144,7 @@ class Print_Dot_App extends Module
 	}
 
 	public function hookDisplayCustomerAccount($params) {
-		return '<div id="pp_mydesigns_div" style="background-color:white; padding:30px"></div>';
+		return '<div id="pa_mydesigns_div" style="background-color:white; padding:30px"></div>';
 	}
 	
 	public function hookDisplayCustomization($params) {
@@ -221,7 +186,7 @@ class Print_Dot_App extends Module
 		
 		foreach($products as $prod) {
 			
-			$pitchprint = '';
+			$print_app = '';
 
 			if ($prod['customizedDatas'] != null) {
 				
@@ -235,7 +200,7 @@ class Print_Dot_App extends Module
 					if (is_array($array_data) 
 						&& count(array_keys($array_data)) 
 							&& in_array('type', array_keys($array_data)) && $array_data['type'] == 'p')
-							$pitchprint = $array_data;
+							$print_app = $array_data;
 				}
 			}
 			
@@ -243,23 +208,22 @@ class Print_Dot_App extends Module
 				'name' => $prod['product_name'],
 				'id' => $prod['product_id'],
 				'qty' => $prod['cart_quantity'],
-				'pitchprint' => json_encode($pitchprint)
+				'print_app' => json_encode($print_app)
 			);
 		}
 		
-		$pp_empty = true;
+		$pa_empty = true;
 		foreach ($items as $item) {
-			$ppItemDecoded = json_decode($item['pitchprint']);
-			if (!empty($ppItemDecoded)) $pp_empty = false;
+			$paItemDecoded = json_decode($item['print_app']);
+			if (!empty($paItemDecoded)) $pa_empty = false;
 		}
-		if ($pp_empty) return;
+		if ($pa_empty) return;
 		
 		$items = json_encode($items);
 
 		$timestamp = time();
-		$pitchprint_api_value = Configuration::get(PRINT_DOT_APP_API_KEY);
-		$pitchprint_secret_value = Configuration::get(PRINT_DOT_APP_SECRET_KEY);
-		$signature = md5($pitchprint_api_value . html_entity_decode($pitchprint_secret_value) . $timestamp);
+		$pda_api_value = Configuration::get(PRINT_DOT_APP_API_KEY);
+		$pda_secret_value = Configuration::get(PRINT_DOT_APP_SECRET_KEY);
 
 		$body = array (
 			'products' => $items,
@@ -270,8 +234,7 @@ class Print_Dot_App extends Module
 			'shippingAddress' => $address->company . ',\n' . $address->address1 . ',\n' . $address->address2 . ',\n' . $address->city . ',\n' . $address->postcode . ',\n' . $address->country,
 			'orderId' => $params['id_order'],
 			'customer' => $customer->id,
-			'apiKey' => $pitchprint_api_value,
-			'signature' => $signature,
+			'apiKey' => $pda_api_value,
 			'status' => $status,
 			'timestamp' => $timestamp,
 			'shop_id' => (int)Context::getContext()->shop->id
@@ -279,7 +242,7 @@ class Print_Dot_App extends Module
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_URL, "https://api.pitchprint.io/runtime/order-{$status}");
+		curl_setopt($ch, CURLOPT_URL, "https://api.print.app/runtime/order-{$status}");
 		curl_setopt($ch, CURLOPT_POST, true);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -297,16 +260,11 @@ class Print_Dot_App extends Module
 		}
 	}
 
-	public function hookDisplayProductActions($params) {
-		return '<div id="pa-buttons" style="margin-left:10px"></div>';
-	}
+
 	
-    public function hookDisplayProductButtons($params) {
+    public function hookDisplayProductActions($params) {
         $productId = (int)Tools::getValue('id_product');
 		$pda_design_options = unserialize(Configuration::get(PRINT_DOT_APP_DESIGNS));
-		$pda_productValues = isset($pda_design_options[$productId]) ? $pda_design_options[$productId] : '';
-		
-		if (empty($pda_productValues)) return '';
    
 		$indexval = Db::getInstance()->getValue(
 			"SELECT `id_customization_field` FROM `"._DB_PREFIX_."customization_field` 
@@ -320,53 +278,31 @@ class Print_Dot_App extends Module
 			)"
 		);
 		
+		if (!$this->context->cart->id && isset($_COOKIE[$this->context->cookie->getName()])) {
+            $this->context->cart->add();
+            $this->context->cookie->id_cart = (int) $this->context->cart->id;
+        }
+		
 		$customization_datas = $this->context->cart->getProductCustomization($productId, null, true);
-		$pp_values = $customization_datas;
+		$pda_values = $customization_datas;
 	
-		if (!empty($pp_values))
-			$pp_values = array_filter($pp_values, function($item) use($indexval) {
+		if (!empty($pda_values))
+			$pda_values = array_filter($pda_values, function($item) use($indexval) {
 				return ($item['index'] == $indexval);
 			});
 
-		$pp_customization_id = 0;
-		if (!empty($customization_datas)) 
-			$pp_customization_id = $customization_datas[0]['id_customization'];
+		$pda_customization_id = 0;
+		if (!empty($customization_datas)) $pda_customization_id = $customization_datas[0]['id_customization'];
 
-		if (!empty($pp_values))
-			$pp_values = array_values($pp_values)[0]['value'];
+		if (!empty($pda_values)) $pda_values = array_values($pda_values)[0]['value'];
 
-        $pda_mode = 'new-project';
-        
 		// Check for project in session cookie
-		if (empty($pp_values) && isset(Context::getContext()->cookie->pp_projects)) 
-		{
-			$ppCookie = unserialize(Context::getContext()->cookie->pp_projects);
-			if (isset($ppCookie[$productId]))
-				$pp_values = $ppCookie[$productId];
-		}
-
-		if ($pp_values) 
-			$pda_mode = 'edit-project';
-		
-        $pp_previews = '';
-        $pp_project_id = '';
-
-        $opt_ = is_string($pp_values) ? json_decode(rawurldecode($pp_values), true) : $pp_values;
-
-		if (!empty($opt_)) {
-			if ($opt_['type'] === 'u') {
-				$pp_previews = $opt_['previews'];
-				$pp_upload_ready = true;
-				$pp_mode = 'upload';
-			} else if ($opt_['type'] === 'p') {
-				$pp_mode = 'edit';
-				$pp_project_id =  $opt_['projectId'];
-				$pp_previews = $opt_['numPages'];
-			}
+		if (empty($pda_values) && isset(Context::getContext()->cookie->pp_projects)) {
+			$pdaCookie = unserialize(Context::getContext()->cookie->pp_projects);
+			if (isset($pdaCookie[$productId])) $pda_values = $pdaCookie[$productId];
 		}
 
         $pda_apiKey = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
-        $pda_designValuesArray = explode('__', $pda_productValues);
 
 		 //update product customizable
         Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'product` SET `customizable` = 1 WHERE `id_product` = '.(int)$productId);
@@ -379,31 +315,24 @@ class Print_Dot_App extends Module
         Configuration::updateGlobalValue('PS_CUSTOMIZATION_FEATURE_ACTIVE', '1');
 
 		$pdaData = array(
-			'commandSelector'		=> '#pa-buttons',
 			'client'				=> 'ps',
-			'projectId' 			=> $pda_project_id,
 			'userId'				=> $this->context->cookie->id_customer,
-			'previews'				=> $pda_previews,
-			'mode'					=> $pda_mode,
 			'langCode'				=> $this->context->language->iso_code,
-			'designId'				=> $pda_designValuesArray[0],
-			'customizationRequired'	=> $pda_designValuesArray[3],
-			'displayMode'			=> intval($pda_designValuesArray[2]),
 			'domainKey'				=> $pda_apiKey,
 			'product'				=> array(
 				'id'					=> $productId,
 				'name'					=> addslashes($params['product']['name']),
 				'url'					=> Tools::getHttpHost(true) . __PS_BASE_URI__ . 'index.php?controller=product&id_product='.$productId
 			),
-			'id_customization'		=> $pp_customization_id
+			'id_customization'		=> $pda_customization_id,
+			'values'				=> '{}',
 		);
-
-		if ($pp_values) {
-			if (is_string($pp_values))
-				$pp_values = json_decode(urldecode($pp_values));
-			$pdaData['projectId'] = $pp_values->designId;
+		
+		if (isset($pda_values) && !empty($pda_values)) {
+			$pdaData['values'] = $pda_values;
 		}
-		$userData = '';
+
+		
 		if ($this->context->customer->isLogged()) {
 			$fname = addslashes($this->context->cookie->customer_firstname);
 			$lname = addslashes($this->context->cookie->customer_lastname);
@@ -429,111 +358,61 @@ class Print_Dot_App extends Module
 				'address' => addslashes($addr)
 			);
         }
+        
+        $jsonEncodedPdaData = json_encode($pdaData);
 
-        return '<script type="text/javascript"> window.print_dot_app_data = ' . json_encode($pdaData). ';</script>
-       ';
+        return '<script type="text/javascript">
+        		var pdaData = ' . $jsonEncodedPdaData . ';
+			    window.printAppParams = {
+			        ...pdaData,
+			        ...JSON.parse(decodeURIComponent(pdaData.values)),
+			    };
+    		</script>';
     }
 
     public function hookDisplayHeader($params) {
-		if ($this->context->controller->php_self  === 'category'
-		  && Configuration::get(PRINT_DOT_APP_CATEGORY_CUSTOMIZATION)) {
-		  	
-			// $this->context->controller->registerJavascript(
-			// 	'pda-client-js',
-			// 	PRINT_DOT_APP_CLIENT_RUN_JS,
-			// 	['server' => 'remote', 'position' => 'head', 'priority' => 200]
-			// );
-			// $this->context->controller->registerJavascript(
-			// 	'category-pitchprint-product-buttons',
-			// 	PP_CAT_CLIENT_JS,
-			// 	['server' => 'remote', 'position' => 'bottom', 'priority' => 203 ]
-			// );	
-		}
-			
 		if ($this->context->controller->php_self === 'product') {
+			
 			$productId = (int)Tools::getValue('id_product');
-			$pp_design_options = unserialize(Configuration::get(PRINT_DOT_APP_DESIGNS));
-			
-			if (isset($pp_design_options[$productId])) {
-				$this->context->controller->registerJavascript(
-					'pda-client-js',
-					PRINT_DOT_APP_CLIENT_RUN_JS . '/' . Configuration::get(PRINT_DOT_APP_DOMAIN_KEY) . '/'. $productId . '/ps',
-					['server' => 'remote', 'position' => 'head', 'priority' => 200]
-				);
-				
-				$this->context->controller->registerJavascript(
-					'module-pitchprint-product-buttons',
-					'modules/'.$this->name.'/views/js/cartType.js',
-					[ 'position' => 'bottom', 'priority' => 201 ]
-				);	
-						
-				// $this->context->controller->registerJavascript(
-				// 	'module-pitchprint-product-buttons',
-				// 	'modules/'.$this->name.'/views/js/client.js',
-				// 	[ 'position' => 'bottom', 'priority' => 203 ]
-				// );		
-			
-				return '<script>window.ppCartType = "ps"</script>';
-			}
+			$this->context->controller->registerJavascript(
+				'pda-client-js',
+				PRINT_DOT_APP_CLIENT_RUN_JS . '/' . Configuration::get(PRINT_DOT_APP_DOMAIN_KEY) . '/'. $productId . '/ps?lang=' . $this->context->language->iso_code,
+				['server' => 'remote', 'position' => 'bottom', 'priority' => 200]
+			);
+			return '';
+
 		} else if (substr($this->context->controller->php_self, 0, 5) === 'cart' || $this->context->controller->php_self === 'order-detail' || $this->context->controller->php_self === 'order-confirmation' || $this->context->controller->php_self === 'my-account') {
 			
 			$this->context->controller->registerJavascript(
-				'pp-client-js',
-				PP_CLIENT_JS,
+				'pda-client-js',
+				PRINT_DOT_APP_CLIENT_JS,
 				['server' => 'remote', 'position' => 'head', 'priority' => 200]
 			);
 			
-			$this->context->controller->registerJavascript(
-				'module-pitchprint-product-buttons',
-				'modules/'.$this->name.'/views/js/cartType.js',
-				[ 'position' => 'bottom', 'priority' => 201 ]
-			);	
+			$page = $this->context->controller->php_self;
+			if (substr($this->context->controller->php_self, 0, 5) === 'cart') $page = 'cart';
 			
-			$this->context->controller->registerJavascript(
-				'pp-noes6-js',
-				PP_NOES6_JS,
-				['server' => 'remote', 'bottom' => 'head', 'priority' => 202]
-			);
-		
-
-			$this->context->controller->registerJavascript(
-				'magnific-photo',
-				MAGNIFIC_JS,
-				['server' => 'remote', 'position' => 'bottom', 'priority' => 200]
-			);
-			$this->context->controller->registerStylesheet(
-				'magnific-photo-css',
-				MAGNIFIC_CSS,
-				['server' => 'remote', 'position' => 'bottom', 'priority' => 200]
-			);
-
-			$this->context->controller->registerJavascript(
-				'module-pitchprint-product-buttons',
-				'modules/'.$this->name.'/views/js/client.js',
-				[
-					'position' => 'bottom',
-					'priority' => 205,
-				]
-			);
-
 			$pp_apiKey = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
 			$ppData = array(
-				'staging' => true,
+				'noInstance' => true,
 				'client' => 'ps',
-				'mode' => 'edit',
+				'page' => $page,
 				'userId' => $this->context->cookie->id_customer,
 				'langCode' => $this->context->language->iso_code,
 				'apiKey' => $pp_apiKey,
-				'afterValidation' => ($this->context->controller->php_self === 'my-account' ? '_fetchProjects' : '_sortCart')
 			);
 
-			return '<script type="text/javascript">	var pp_data = '.json_encode($ppData).';
-			window.ppCartType = "ps"</script>';
+			return '<script type="text/javascript">
+				window.printAppParams = '.json_encode($ppData).';
+				document.addEventListener("DOMContentLoaded", function() {
+					if (typeof PrintAppClient !== "undefined") window.printAppInstance = new PrintAppClient(window.printAppParams);
+				});
+				</script>';
 
 		}
     }
 
-//Admin functions =====================================================================================
+	//Admin functions =====================================================================================
 
 	public function hookDisplayBackOfficeHeader($params) {
 		if (Tools::getValue('ajax')) return;
@@ -544,13 +423,6 @@ class Print_Dot_App extends Module
 			Context::getContext()->controller->addJquery();
 			$this->context->controller->addJS($this->_path.'/views/js/psAdmin.js');
 		}
-		
-		$url = Tools::getHttpHost(true) . __PS_BASE_URI__ . 'index.php?task=print_dot_app_serve_designs';
-		echo '<script>window.pda_ajax_url="'.$url.'";</script>';
-		
-		if ($_controller->controller_name === 'AdminProducts') {
-			$this->context->controller->addJS($this->_path.'/views/js/designTreeSelect.js');
-		}
     }
 
     public function hookDisplayAdminProductsExtra($params) {
@@ -558,16 +430,14 @@ class Print_Dot_App extends Module
         if (Validate::isLoadedObject($product = new Product($id_product))) {
         	$api_key = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
         	$this->context->smarty->assign([
-        		'pa_admin_values' => json_encode([
-	        		'product_title' => array_pop($product->name),
-	                'api_key' => $api_key,
-	                'product_id' => $id_product
-	                ]),
+				'pa_product_title' => array_pop($product->name),
+				'pa_api_key' => $api_key,
+				'pa_product_id' => $id_product,
                 'pa_module_uri' =>   __PS_BASE_URI__ . 'modules/print_dot_app'
             ]);
 			return $this->display(__FILE__, '/views/templates/admin/displayAdminProductsExtra.tpl');
         } else
-			$this->context->controller->errors[] = Tools::displayError('You must first save the product before assigning a design!');
+			$this->context->controller->errors[] = Tools::displayError('Please first save this new product before assigning a design!');
     }
 
     // Reset product upon add to cart
@@ -598,22 +468,6 @@ class Print_Dot_App extends Module
         return $custmz_field;
     }
 
-    public function hookActionProductUpdate($params) {
-		$print_dot_app_design_select		= (string)Tools::getValue('print_dot_app_design_select');
-		$print_dot_app_design_select_c		= (string)Tools::getValue('print_dot_app_design_select_current');
-		$print_dot_app_design_display_mode	= (string)Tools::getValue('print_dot_app_display_mode');
-		$print_dot_app_design_required		= (string)Tools::getValue('print_dot_app_design_required');
-		
-		$id_product = (int)$params['id_product'];
-
-        $print_dot_app_design = unserialize(Configuration::get(PRINT_DOT_APP_DESIGNS));
-        $print_dot_app_designs[$id_product] = 
-        	($print_dot_app_design_select ? $print_dot_app_design_select : $print_dot_app_design_select_c) 
-        	. '__' . $print_dot_app_design_display_mode . '__' . (!empty($print_dot_app_design_required) ? '1': '0');
-        Configuration::updateValue(PRINT_DOT_APP_DESIGNS, serialize($print_dot_app_designs));
-        
-        return;
-    }
 
     public function hookDisplayAdminOrder($params) {
         return "
@@ -623,7 +477,6 @@ class Print_Dot_App extends Module
 					PPADMIN.vars = {
 						
 					};
-					console.log(PPADMIN);
 					PPADMIN.readyFncs.push('init');
 					if (typeof PPADMIN.start !== 'undefined') PPADMIN.start();
 				});
@@ -636,7 +489,6 @@ class Print_Dot_App extends Module
       if (Tools::isSubmit('submit'.$this->name)) {
           $print_dot_app_api = strval(Tools::getValue(PRINT_DOT_APP_DOMAIN_KEY));
           $print_dot_app_secret = strval(Tools::getValue(PRINT_DOT_APP_SECRET_KEY));
-          $print_dot_app_cat_cust_enabled = strval(Tools::getValue(PRINT_DOT_APP_CATEGORY_CUSTOMIZATION.'_enabled'));
 
           if (!$print_dot_app_api  || empty($print_dot_app_api) || !Validate::isGenericName($print_dot_app_api) || !$print_dot_app_secret  || empty($print_dot_app_secret) || !Validate::isGenericName($print_dot_app_secret)) {
               $output .= $this->displayError( $this->l('Invalid Configuration value') );
@@ -645,7 +497,6 @@ class Print_Dot_App extends Module
                 $print_dot_app_secret = str_replace(' ', '', $print_dot_app_secret);
                 Configuration::updateValue(PRINT_DOT_APP_DOMAIN_KEY, $print_dot_app_api);
                 Configuration::updateValue(PRINT_DOT_APP_SECRET_KEY, $print_dot_app_secret);
-				Configuration::updateValue(PRINT_DOT_APP_CATEGORY_CUSTOMIZATION, $print_dot_app_cat_cust_enabled === "on" ? true : false);
                 
                 $output .= $this->displayConfirmation($this->l('Settings updated'));
           }
@@ -715,7 +566,6 @@ class Print_Dot_App extends Module
         // Load current value
         $helper->fields_value[PRINT_DOT_APP_DOMAIN_KEY] = Configuration::get(PRINT_DOT_APP_DOMAIN_KEY);
         $helper->fields_value[PRINT_DOT_APP_SECRET_KEY] = Configuration::get(PRINT_DOT_APP_SECRET_KEY);
-        $helper->fields_value[PRINT_DOT_APP_CATEGORY_CUSTOMIZATION.'_enabled'] = Configuration::get(PRINT_DOT_APP_CATEGORY_CUSTOMIZATION);
 
         return $helper->generateForm($fields_form);
     }
