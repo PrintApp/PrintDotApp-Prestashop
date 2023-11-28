@@ -1,6 +1,6 @@
 Migrated design-selection to Print.App admin
 
-Release 1.1.0 - 2023/11/27
+Release 1.2.0 - 2023/11/27
 *   Completed migration of Design Assignment to Print.App Admin.
     Design assignment happens on the design page of print.App
 *   Updated app Icon

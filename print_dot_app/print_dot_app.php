@@ -15,7 +15,7 @@ class Print_Dot_App extends Module
     public function __construct() {
         $this->name = 'print_dot_app';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.0';
+        $this->version = '1.2.0';
         $this->author = 'Print.App';
         $this->need_instance = 1;
         $this->ps_versions_compliancy = array('min' => '1.7.1.0', 'max' => _PS_VERSION_);
